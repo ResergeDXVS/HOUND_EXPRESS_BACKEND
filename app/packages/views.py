@@ -62,9 +62,11 @@ class HistoricalGuideView(APIView):
     def get(self, request, pk):
         try:
             package = HistoricalPackage.objects.filter(guide_id=pk)
-        except Package.DoesNotExist:
+        except HistoricalPackage.DoesNotExist:
             return Response({"error": "Historicos no encontrada"}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = HistoricalSerializers(package,many=True)
+        if len(serializer.data)==0:
+            return Response({"error": "Historicos no encontrada"}, status=status.HTTP_404_NOT_FOUND)
         return Response(serializer.data)
         
