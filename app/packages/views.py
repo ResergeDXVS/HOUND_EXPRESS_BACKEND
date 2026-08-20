@@ -1,8 +1,8 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Package
-from .serializers import PackageSerializers
+from .models import Package, HistoricalPackage
+from .serializers import PackageSerializers, HistoricalSerializers
 
 class CreateGuideView(APIView):
     def post(self, request):
@@ -10,6 +10,7 @@ class CreateGuideView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -24,17 +25,14 @@ class UpdateGuideView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
+        print(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class GetGuideView(APIView):
-    def get(self, request, pk):
-        try:
-            package = Package.objects.get(pk=pk)
-        except Package.DoesNotExist:
-            return Response({"error": "Guía no encontrada"}, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = PackageSerializers(package)
+    def get(self, request):
+        packages = Package.objects.all()
+        serializer = PackageSerializers(packages, many=True)
         return Response(serializer.data)
 
 
@@ -47,3 +45,26 @@ class DeleteGuideView(APIView):
 
         package.delete()
         return Response({"message": f"Guía {pk} eliminada"}, status=status.HTTP_204_NO_CONTENT)
+
+class ReportGuidesView(APIView):
+    def get(self, request):
+        packages = Package.objects.all()
+        information = {
+            "count": packages.count(),
+            "intransit_count": packages.filter(status="intransit").count(),
+            "delivered_count": packages.filter(status="delivered").count(),
+        }
+        return Response(information)
+
+
+
+class HistoricalGuideView(APIView):
+    def get(self, request, pk):
+        try:
+            package = HistoricalPackage.objects.filter(guide_id=pk)
+        except Package.DoesNotExist:
+            return Response({"error": "Historicos no encontrada"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = HistoricalSerializers(package,many=True)
+        return Response(serializer.data)
+        
